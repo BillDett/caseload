@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Vulnerability Impact - CaseLoad{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-bullseye"></i> Vulnerability Impact</h1>
+        <p class="text-muted">Per-CVE blast radius analysis</p>
+    </div>
+</div>
+
+{% if error %}
+<div class="alert alert-warning">
+    <i class="bi bi-exclamation-triangle"></i> {{ error }}
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-search"></i> Search for a CVE</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('impact.search') }}" method="GET">
+                    <div class="input-group">
+                        <input type="text" name="q" class="form-control form-control-lg"
+                               placeholder="Enter CVE ID (e.g., CVE-2024-12345)"
+                               value="{{ request.args.get('q', '') }}">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if recent_cves %}
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock-history"></i> Recent CVEs</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>CVE ID</th>
+                            <th>Severity</th>
+                            <th>Trackers</th>
+                            <th>Affected Teams</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cve in recent_cves %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('impact.cve_detail', cve_id=cve.cve_id) }}">
+                                    {{ cve.cve_id }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if cve.severity %}
+                                <span class="badge bg-{{ 'danger' if cve.severity == 'critical' else 'warning' if cve.severity == 'high' else 'info' if cve.severity == 'medium' else 'secondary' }}">
+                                    {{ cve.severity.upper() }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ cve.trackers.count() }}</td>
+                            <td>{{ cve.affected_teams | length }}</td>
+                            <td>
+                                {% if cve.is_embargoed %}
+                                <span class="badge bg-danger"><i class="bi bi-lock"></i> Embargoed</span>
+                                {% else %}
+                                <span class="badge bg-success"><i class="bi bi-unlock"></i> Public</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('impact.cve_detail', cve_id=cve.cve_id) }}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    View Impact
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> No CVEs found. Sync data from Jira to see CVE impact analysis.
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

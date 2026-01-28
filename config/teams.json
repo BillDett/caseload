@@ -1,0 +1,29 @@
+{
+  "teams": [
+    {
+      "name": "OpenShift",
+      "description": "OpenShift Core",
+      "projects": ["OCPBUGS"]
+    },
+    {
+      "name": "Quay",
+      "description": "RH Quay, quay.io",
+      "projects": ["PROJQUAY"]
+    },
+    {
+      "name": "ACS",
+      "description": "Advanced Cluster Security",
+      "projects": ["ROX"]
+    },
+    {
+      "name": "RHEL",
+      "description": "Red Hat Enterprise Linux",
+      "projects": ["RHEL"]
+    }
+  ],
+  "project_dependencies": {
+    "OCPBUGS": ["RHEL"],
+    "PROJQUAY": ["RHEL", "OCPBUGS"],
+    "ROX": ["RHEL", "OCPBUGS"]
+  }
+}

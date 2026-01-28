@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{{ metric.title }} - CaseLoad{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('trends.index') }}">Vulnerability Trends</a></li>
+                <li class="breadcrumb-item active">{{ metric.title }}</li>
+            </ol>
+        </nav>
+        <h1>{{ metric.title }}</h1>
+        <p class="text-muted">{{ metric.description }}</p>
+    </div>
+</div>
+
+{% if filters %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-funnel"></i> Filters</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    {% for key, filter in filters.items() %}
+                    <div class="col-md-3">
+                        <label class="form-label">{{ filter.label }}</label>
+                        {% if filter.type == 'daterange' %}
+                        <input type="date" name="{{ key }}_start" class="form-control"
+                               value="{{ request.args.get(key + '_start', '') }}">
+                        <input type="date" name="{{ key }}_end" class="form-control mt-1"
+                               value="{{ request.args.get(key + '_end', '') }}">
+                        {% elif filter.type == 'select' %}
+                        <select name="{{ key }}" class="form-select">
+                            <option value="">All</option>
+                        </select>
+                        {% elif filter.type == 'number' %}
+                        <input type="number" name="{{ key }}" class="form-control"
+                               value="{{ request.args.get(key, filter.get('default', '')) }}">
+                        {% else %}
+                        <input type="text" name="{{ key }}" class="form-control"
+                               value="{{ request.args.get(key, '') }}"
+                               placeholder="{{ filter.get('placeholder', '') }}">
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if result.error %}
+<div class="row">
+    <div class="col">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> Error: {{ result.error }}
+        </div>
+    </div>
+</div>
+{% else %}
+
+{% if result.summary %}
+<div class="row mb-4">
+    {% for key, value in result.summary.items() %}
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="card-subtitle text-muted">{{ key.replace('_', ' ').title() }}</h6>
+                <h3>{{ value }}{% if 'rate' in key %}%{% endif %}</h3>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if result.chart_json %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <div id="chart"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if result.chart_json %}
+<script>
+    var chartData = {{ result.chart_json | safe }};
+    Plotly.newPlot('chart', chartData.data, chartData.layout, {responsive: true});
+</script>
+{% endif %}
+{% endblock %}

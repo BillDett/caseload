@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cve_id }} - Vulnerability Impact - CaseLoad{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('impact.index') }}">Vulnerability Impact</a></li>
+                <li class="breadcrumb-item active">{{ cve_id }}</li>
+            </ol>
+        </nav>
+        <h1><i class="bi bi-bullseye"></i> {{ cve_id }}</h1>
+        <p class="text-muted">Blast radius analysis</p>
+    </div>
+</div>
+
+{% if result.error %}
+<div class="row">
+    <div class="col">
+        <div class="alert alert-danger">
+            <i class="bi bi-exclamation-triangle"></i> {{ result.error }}
+        </div>
+        <a href="{{ url_for('impact.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Search
+        </a>
+    </div>
+</div>
+{% else %}
+
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Severity</h6>
+                {% if result.summary.severity %}
+                <span class="badge bg-{{ 'danger' if result.summary.severity == 'critical' else 'warning' if result.summary.severity == 'high' else 'info' if result.summary.severity == 'medium' else 'secondary' }} fs-5">
+                    {{ result.summary.severity.upper() }}
+                </span>
+                {% else %}
+                <span class="badge bg-secondary fs-5">Unknown</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Affected Teams</h6>
+                <h2>{{ result.summary.affected_teams }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Affected Projects</h6>
+                <h2>{{ result.summary.affected_projects }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Total Trackers</h6>
+                <h2>{{ result.summary.total_trackers }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Open Trackers</h6>
+                <h2 class="{{ 'text-danger' if result.summary.open_trackers > 0 else 'text-success' }}">
+                    {{ result.summary.open_trackers }}
+                </h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h6 class="text-muted">Date Skew</h6>
+                <h2>{{ result.summary.date_skew_days if result.summary.date_skew_days is not none else 'N/A' }}{% if result.summary.date_skew_days is not none %} days{% endif %}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if result.summary.is_embargoed %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="alert alert-danger">
+            <i class="bi bi-lock"></i> <strong>Embargoed CVE</strong> - This vulnerability is under embargo. Handle with care.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-diagram-3"></i> Dependency Graph</h5>
+            </div>
+            <div class="card-body">
+                <div id="chart" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if result.data.team_impact %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-people"></i> Team Impact</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Team</th>
+                            <th>Trackers</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for team, count in result.data.team_impact.items() %}
+                        <tr>
+                            <td>{{ team }}</td>
+                            <td>{{ count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if result.chart_json %}
+<script>
+    var chartData = {{ result.chart_json | safe }};
+    Plotly.newPlot('chart', chartData.data, chartData.layout, {responsive: true});
+</script>
+{% endif %}
+{% endblock %}

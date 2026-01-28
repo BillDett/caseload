@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CaseLoad{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="bi bi-speedometer2"></i> Hybrid Platforms Vulnerability Dashboard</h1>
+                <p class="text-muted">Overview of CVE tracking across your organization</p>
+            </div>
+            <div>
+                <form action="{{ url_for('main.sync') }}" method="POST" class="d-inline" id="sync-form">
+                    <button type="submit" class="btn btn-primary btn-lg" id="sync-btn">
+                        <span id="sync-icon"><i class="bi bi-arrow-repeat"></i></span>
+                        <span id="sync-spinner" class="d-none">
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        </span>
+                        <span id="sync-text">Sync Data</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sync progress overlay -->
+<div id="sync-overlay" class="d-none">
+    <div class="sync-overlay-content">
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h5>Syncing Data...</h5>
+        <p class="text-muted mb-0">This may take a few moments. Check the console for progress.</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-people"></i> Teams</h5>
+                <h2 class="display-4">{{ stats.teams }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-info">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-folder"></i> Projects</h5>
+                <h2 class="display-4">{{ stats.projects }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-warning">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-shield-exclamation"></i> CVEs</h5>
+                <h2 class="display-4">{{ stats.cves }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-bg-danger">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Open Trackers</h5>
+                <h2 class="display-4">{{ stats.open_trackers }}</h2>
+                <small>of {{ stats.trackers }} total</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-graph-up"></i> Vulnerability Trends</h5>
+            </div>
+            <div class="card-body">
+                <p>Organization-wide CVE impact analysis:</p>
+                <ul>
+                    <li>Tracker volume over time</li>
+                    <li>SLA compliance rates</li>
+                    <li>Severity breakdown</li>
+                    <li>Closure reasons</li>
+                </ul>
+                <a href="{{ url_for('trends.index') }}" class="btn btn-primary">
+                    View Trends <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bullseye"></i> Vulnerability Impact</h5>
+            </div>
+            <div class="card-body">
+                <p>Per-CVE blast radius analysis:</p>
+                <ul>
+                    <li>Affected teams and projects</li>
+                    <li>Date skew visualization</li>
+                    <li>Dependency graphs</li>
+                    <li>Fix ordering</li>
+                </ul>
+                <a href="{{ url_for('impact.index') }}" class="btn btn-primary">
+                    View Impact <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if stats.trackers == 0 %}
+<div class="row mt-4">
+    <div class="col">
+        <div class="alert alert-info">
+            <h5><i class="bi bi-info-circle"></i> Getting Started</h5>
+            <p>No data has been synced yet. To get started:</p>
+            <ol>
+                <li>Edit <code>config/teams.json</code> to define your teams and projects</li>
+                <li>Set environment variables for Jira: <code>JIRA_SERVER</code>, <code>JIRA_USERNAME</code>, <code>JIRA_API_TOKEN</code></li>
+                <li>Click the <strong>Sync Data</strong> button above to import data</li>
+            </ol>
+            {% if not jira_configured %}
+            <p class="mb-0"><i class="bi bi-exclamation-triangle text-warning"></i> Jira credentials not configured. Sync will only load teams from config.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('sync-form').addEventListener('submit', function(e) {
+    // Show loading state on button
+    var btn = document.getElementById('sync-btn');
+    var icon = document.getElementById('sync-icon');
+    var spinner = document.getElementById('sync-spinner');
+    var text = document.getElementById('sync-text');
+    var overlay = document.getElementById('sync-overlay');
+
+    btn.disabled = true;
+    icon.classList.add('d-none');
+    spinner.classList.remove('d-none');
+    text.textContent = 'Syncing...';
+    overlay.classList.remove('d-none');
+});
+</script>
+{% endblock %}
