@@ -53,11 +53,10 @@ class SLAComplianceMetric(AnalyticsMetric):
             sla_days: Number of days for SLA (default from config).
             date_range_start: Start of date range.
             date_range_end: End of date range.
-            team_id: Optional team filter.
         """
         from flask import current_app
         from app.extensions import db
-        from app.models import Tracker, Project
+        from app.models import Tracker
 
         default_sla = current_app.config.get("DEFAULT_SLA_DAYS", 30)
         default_start = datetime.utcnow() - timedelta(days=90)
@@ -66,19 +65,13 @@ class SLAComplianceMetric(AnalyticsMetric):
         sla_days = self._parse_int(kwargs.get("sla_days"), default_sla)
         start_date = self._parse_date(kwargs.get("date_range_start"), default_start)
         end_date = self._parse_date(kwargs.get("date_range_end"), default_end)
-        team_id = kwargs.get("team_id")
 
         try:
-            query = db.session.query(Tracker).filter(
+            resolved_trackers = db.session.query(Tracker).filter(
                 Tracker.resolved_date.isnot(None),
                 Tracker.resolved_date >= start_date,
                 Tracker.resolved_date <= end_date,
-            )
-
-            if team_id:
-                query = query.join(Project).filter(Project.team_id == team_id)
-
-            resolved_trackers = query.all()
+            ).all()
 
             # Calculate SLA compliance
             within_sla = 0
@@ -163,8 +156,17 @@ class SLAComplianceMetric(AnalyticsMetric):
 
     def get_filter_options(self) -> dict:
         return {
+            "time_range": {
+                "type": "select",
+                "label": "Quick Select",
+                "options": [
+                    {"value": "", "label": "Custom"},
+                    {"value": "last_week", "label": "Last Week"},
+                    {"value": "last_month", "label": "Last Month"},
+                    {"value": "last_quarter", "label": "Last Quarter"},
+                ],
+            },
             "date_range": {"type": "daterange", "label": "Date Range"},
-            "team_id": {"type": "select", "label": "Team"},
             "sla_days": {
                 "type": "number",
                 "label": "SLA Days",

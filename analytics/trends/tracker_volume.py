@@ -45,8 +45,6 @@ class TrackerVolumeMetric(AnalyticsMetric):
         Kwargs:
             date_range_start: Start of date range.
             date_range_end: End of date range.
-            team_id: Optional team filter.
-            project_id: Optional project filter.
         """
         from app.extensions import db
         from app.models import Tracker
@@ -56,20 +54,9 @@ class TrackerVolumeMetric(AnalyticsMetric):
 
         start_date = self._parse_date(kwargs.get("date_range_start"), default_start)
         end_date = self._parse_date(kwargs.get("date_range_end"), default_end)
-        team_id = kwargs.get("team_id")
-        project_id = kwargs.get("project_id")
 
         try:
-            query = db.session.query(Tracker)
-
-            if project_id:
-                query = query.filter(Tracker.project_id == project_id)
-            elif team_id:
-                from app.models import Project
-
-                query = query.join(Project).filter(Project.team_id == team_id)
-
-            trackers = query.filter(
+            trackers = db.session.query(Tracker).filter(
                 Tracker.created_date >= start_date,
                 Tracker.created_date <= end_date,
             ).all()
@@ -112,6 +99,19 @@ class TrackerVolumeMetric(AnalyticsMetric):
                 y_label="Count",
             )
 
+            # Count trackers closed with inaccurate resolutions
+            inaccurate_resolutions = {'obsolete', "won't do", 'not a bug', 'duplicate'}
+            inaccurate_count = sum(
+                1 for t in trackers
+                if t.resolution and t.resolution.lower() in inaccurate_resolutions
+            )
+
+            total_closed = sum(1 for t in trackers if not t.is_open)
+            accuracy_rate = round(
+                ((total_closed - inaccurate_count) / total_closed * 100) if total_closed > 0 else 100,
+                1
+            )
+
             return AnalyticsResult(
                 metric_id=self.metric_id,
                 title=self.title,
@@ -120,7 +120,9 @@ class TrackerVolumeMetric(AnalyticsMetric):
                 summary={
                     "total_trackers": len(trackers),
                     "currently_open": sum(1 for t in trackers if t.is_open),
-                    "closed": sum(1 for t in trackers if not t.is_open),
+                    "closed": total_closed,
+                    "inaccurate": inaccurate_count,
+                    "accuracy_rate": accuracy_rate,
                 },
             )
 
@@ -133,7 +135,15 @@ class TrackerVolumeMetric(AnalyticsMetric):
 
     def get_filter_options(self) -> dict:
         return {
+            "time_range": {
+                "type": "select",
+                "label": "Quick Select",
+                "options": [
+                    {"value": "", "label": "Custom"},
+                    {"value": "last_week", "label": "Last Week"},
+                    {"value": "last_month", "label": "Last Month"},
+                    {"value": "last_quarter", "label": "Last Quarter"},
+                ],
+            },
             "date_range": {"type": "daterange", "label": "Date Range"},
-            "team_id": {"type": "select", "label": "Team"},
-            "project_id": {"type": "select", "label": "Project"},
         }

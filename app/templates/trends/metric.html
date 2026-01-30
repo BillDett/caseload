@@ -29,13 +29,22 @@
                     <div class="col-md-3">
                         <label class="form-label">{{ filter.label }}</label>
                         {% if filter.type == 'daterange' %}
-                        <input type="date" name="{{ key }}_start" class="form-control"
+                        <input type="date" name="{{ key }}_start" id="{{ key }}_start" class="form-control"
                                value="{{ request.args.get(key + '_start', '') }}">
-                        <input type="date" name="{{ key }}_end" class="form-control mt-1"
+                        <input type="date" name="{{ key }}_end" id="{{ key }}_end" class="form-control mt-1"
                                value="{{ request.args.get(key + '_end', '') }}">
                         {% elif filter.type == 'select' %}
-                        <select name="{{ key }}" class="form-select">
+                        <select name="{{ key }}" id="{{ key }}" class="form-select">
+                            {% if filter.options %}
+                                {% for option in filter.options %}
+                                <option value="{{ option.value }}"
+                                    {% if request.args.get(key, '') == option.value %}selected{% endif %}>
+                                    {{ option.label }}
+                                </option>
+                                {% endfor %}
+                            {% else %}
                             <option value="">All</option>
+                            {% endif %}
                         </select>
                         {% elif filter.type == 'number' %}
                         <input type="number" name="{{ key }}" class="form-control"
@@ -74,7 +83,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h6 class="card-subtitle text-muted">{{ key.replace('_', ' ').title() }}</h6>
-                <h3>{{ value }}{% if 'rate' in key %}%{% endif %}</h3>
+                <h3>{{ value }}{% if key.endswith('_rate') %}%{% endif %}</h3>
             </div>
         </div>
     </div>
@@ -104,4 +113,33 @@
     Plotly.newPlot('chart', chartData.data, chartData.layout, {responsive: true});
 </script>
 {% endif %}
+<script>
+    // Handle time range quick select
+    document.addEventListener('DOMContentLoaded', function() {
+        var timeRangeSelect = document.getElementById('time_range');
+        var dateStartInput = document.getElementById('date_range_start');
+        var dateEndInput = document.getElementById('date_range_end');
+
+        if (timeRangeSelect && dateStartInput && dateEndInput) {
+            timeRangeSelect.addEventListener('change', function() {
+                var value = this.value;
+                if (!value) return;
+
+                var endDate = new Date();
+                var startDate = new Date();
+
+                if (value === 'last_week') {
+                    startDate.setDate(endDate.getDate() - 7);
+                } else if (value === 'last_month') {
+                    startDate.setDate(endDate.getDate() - 30);
+                } else if (value === 'last_quarter') {
+                    startDate.setDate(endDate.getDate() - 90);
+                }
+
+                dateStartInput.value = startDate.toISOString().split('T')[0];
+                dateEndInput.value = endDate.toISOString().split('T')[0];
+            });
+        }
+    });
+</script>
 {% endblock %}
