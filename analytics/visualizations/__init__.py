@@ -6,6 +6,7 @@ from analytics.visualizations.charts import (
     LineChart,
     PieChart,
     NetworkGraph,
+    SankeyDiagram,
 )
 
-__all__ = ["Visualization", "BarChart", "LineChart", "PieChart", "NetworkGraph"]
+__all__ = ["Visualization", "BarChart", "LineChart", "PieChart", "NetworkGraph", "SankeyDiagram"]

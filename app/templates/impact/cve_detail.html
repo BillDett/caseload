@@ -35,8 +35,9 @@
             <div class="card-body">
                 <h6 class="text-muted">Severity</h6>
                 {% if result.summary.severity %}
-                <span class="badge bg-{{ 'danger' if result.summary.severity == 'critical' else 'warning' if result.summary.severity == 'high' else 'info' if result.summary.severity == 'medium' else 'secondary' }} fs-5">
-                    {{ result.summary.severity.upper() }}
+                {% set sev_lower = result.summary.severity.lower() %}
+                <span class="badge bg-{{ 'danger' if sev_lower == 'critical' else 'warning' if sev_lower == 'important' else 'info' if sev_lower == 'moderate' else 'secondary' }} fs-5">
+                    {{ result.summary.severity }}
                 </span>
                 {% else %}
                 <span class="badge bg-secondary fs-5">Unknown</span>
@@ -81,7 +82,7 @@
     <div class="col-md-2">
         <div class="card text-center">
             <div class="card-body">
-                <h6 class="text-muted">Date Skew</h6>
+                <h6 class="text-muted">Create Date Skew</h6>
                 <h2>{{ result.summary.date_skew_days if result.summary.date_skew_days is not none else 'N/A' }}{% if result.summary.date_skew_days is not none %} days{% endif %}</h2>
             </div>
         </div>
@@ -102,7 +103,7 @@
     <div class="col">
         <div class="card">
             <div class="card-header">
-                <h5><i class="bi bi-diagram-3"></i> Dependency Graph</h5>
+                <h5><i class="bi bi-bar-chart-steps"></i> Tracker Timeline Flow</h5>
             </div>
             <div class="card-body">
                 <div id="chart" style="height: 500px;"></div>

@@ -28,24 +28,44 @@ class SLAComplianceMetric(AnalyticsMetric):
     def category(self) -> Literal["trends", "impact"]:
         return "trends"
 
+    def _parse_date(self, date_str: str | None, default: datetime) -> datetime:
+        """Parse date string to datetime, returning default if invalid."""
+        if not date_str:
+            return default
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return default
+
+    def _parse_int(self, value: str | int | None, default: int) -> int:
+        """Parse int value, returning default if invalid."""
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return default
+
     def compute(self, **kwargs) -> AnalyticsResult:
         """Compute SLA compliance metrics.
 
         Kwargs:
             sla_days: Number of days for SLA (default from config).
-            start_date: Start of date range.
-            end_date: End of date range.
+            date_range_start: Start of date range.
+            date_range_end: End of date range.
             team_id: Optional team filter.
         """
         from flask import current_app
         from app.extensions import db
         from app.models import Tracker, Project
 
-        sla_days = kwargs.get(
-            "sla_days", current_app.config.get("DEFAULT_SLA_DAYS", 30)
-        )
-        start_date = kwargs.get("start_date", datetime.utcnow() - timedelta(days=90))
-        end_date = kwargs.get("end_date", datetime.utcnow())
+        default_sla = current_app.config.get("DEFAULT_SLA_DAYS", 30)
+        default_start = datetime.utcnow() - timedelta(days=90)
+        default_end = datetime.utcnow()
+
+        sla_days = self._parse_int(kwargs.get("sla_days"), default_sla)
+        start_date = self._parse_date(kwargs.get("date_range_start"), default_start)
+        end_date = self._parse_date(kwargs.get("date_range_end"), default_end)
         team_id = kwargs.get("team_id")
 
         try:

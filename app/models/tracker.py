@@ -14,12 +14,14 @@ class Tracker(db.Model):
     status = db.Column(db.String(50), nullable=True)
     resolution = db.Column(db.String(50), nullable=True)
     priority = db.Column(db.String(50), nullable=True)
+    severity = db.Column(db.String(50), nullable=True)  # Critical, Important, Moderate
     assignee = db.Column(db.String(255), nullable=True)
     reporter = db.Column(db.String(255), nullable=True)
     created_date = db.Column(db.DateTime, nullable=True)
     updated_date = db.Column(db.DateTime, nullable=True)
     resolved_date = db.Column(db.DateTime, nullable=True)
     due_date = db.Column(db.DateTime, nullable=True)
+    sla_date = db.Column(db.DateTime, nullable=True)  # SLA target date from Jira
     sla_breach = db.Column(db.Boolean, default=False, nullable=False)
     closure_reason = db.Column(db.String(100), nullable=True)
 

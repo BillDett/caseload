@@ -17,12 +17,14 @@ class RawTracker:
     status: str | None = None
     resolution: str | None = None
     priority: str | None = None
+    severity: str | None = None  # Critical, Important, Moderate
     assignee: str | None = None
     reporter: str | None = None
     created_date: datetime | None = None
     updated_date: datetime | None = None
     resolved_date: datetime | None = None
     due_date: datetime | None = None
+    sla_date: datetime | None = None  # SLA target date
     cve_ids: list[str] = field(default_factory=list)
     labels: list[str] = field(default_factory=list)
     custom_fields: dict = field(default_factory=dict)

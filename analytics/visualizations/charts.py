@@ -153,6 +153,65 @@ class PieChart(Visualization):
         """
 
 
+class SankeyDiagram(Visualization):
+    """Sankey diagram visualization for flow relationships."""
+
+    @property
+    def viz_type(self) -> str:
+        return "sankey"
+
+    def render_json(self, data: Any, **options) -> str:
+        """Render Sankey diagram to Plotly JSON.
+
+        Args:
+            data: Dict with 'labels', 'sources', 'targets', 'values', and optionally 'colors'.
+            **options: title, height.
+        """
+        labels = data.get("labels", [])
+        sources = data.get("sources", [])
+        targets = data.get("targets", [])
+        values = data.get("values", [])
+        colors = data.get("colors", [])
+
+        fig = go.Figure(data=[go.Sankey(
+            node=dict(
+                pad=15,
+                thickness=20,
+                line=dict(color="black", width=0.5),
+                label=labels,
+                color=colors if colors else None,
+            ),
+            link=dict(
+                source=sources,
+                target=targets,
+                value=values,
+                color="rgba(150, 150, 150, 0.4)",
+            )
+        )])
+
+        fig.update_layout(
+            title=dict(
+                text=options.get("title", ""),
+                font=dict(size=16),
+            ),
+            font=dict(size=12),
+            height=options.get("height", 500),
+        )
+
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+
+    def render_html(self, data: Any, **options) -> str:
+        """Render Sankey diagram to HTML."""
+        chart_json = self.render_json(data, **options)
+        div_id = options.get("div_id", "chart")
+        return f"""
+        <div id="{div_id}"></div>
+        <script>
+            Plotly.newPlot('{div_id}', {chart_json}.data, {chart_json}.layout);
+        </script>
+        """
+
+
 class NetworkGraph(Visualization):
     """Network graph visualization for dependencies."""
 

@@ -30,20 +30,32 @@ class TrackerVolumeMetric(AnalyticsMetric):
     def category(self) -> Literal["trends", "impact"]:
         return "trends"
 
+    def _parse_date(self, date_str: str | None, default: datetime) -> datetime:
+        """Parse date string to datetime, returning default if invalid."""
+        if not date_str:
+            return default
+        try:
+            return datetime.strptime(date_str, "%Y-%m-%d")
+        except (ValueError, TypeError):
+            return default
+
     def compute(self, **kwargs) -> AnalyticsResult:
         """Compute tracker volume over time.
 
         Kwargs:
-            start_date: Start of date range.
-            end_date: End of date range.
+            date_range_start: Start of date range.
+            date_range_end: End of date range.
             team_id: Optional team filter.
             project_id: Optional project filter.
         """
         from app.extensions import db
         from app.models import Tracker
 
-        start_date = kwargs.get("start_date", datetime.utcnow() - timedelta(days=90))
-        end_date = kwargs.get("end_date", datetime.utcnow())
+        default_start = datetime.utcnow() - timedelta(days=90)
+        default_end = datetime.utcnow()
+
+        start_date = self._parse_date(kwargs.get("date_range_start"), default_start)
+        end_date = self._parse_date(kwargs.get("date_range_end"), default_end)
         team_id = kwargs.get("team_id")
         project_id = kwargs.get("project_id")
 

@@ -62,6 +62,9 @@ def sync():
 
     if jira_server and jira_username and jira_token:
         try:
+            from datetime import datetime
+            from app.models import Util
+
             jira = JiraDataSource(
                 server=jira_server,
                 username=jira_username,
@@ -75,8 +78,19 @@ def sync():
                 flash(f"Jira connection failed: {error_msg}", "error")
                 return redirect(url_for("main.index"))
 
+            # Get last sync datetime for incremental sync
+            last_sync = Util.get_last_sync()
+            sync_start_time = datetime.utcnow()
+
             sync_service = SyncService(current_app)
-            stats = sync_service.sync_from_source(jira, project_keys=project_keys)
+            stats = sync_service.sync_from_source(
+                jira,
+                project_keys=project_keys,
+                since=last_sync,
+            )
+
+            # Update last sync datetime on success
+            Util.set_last_sync(sync_start_time)
 
             flash(
                 f"Jira sync: {stats['trackers_created']} trackers created, "

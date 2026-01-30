@@ -99,6 +99,7 @@ class JiraDataSource(DataSource):
         if since:
             since_str = since.strftime("%Y-%m-%d %H:%M")
             jql_parts.append(f'updated >= "{since_str}"')
+            logger.info(f"Incremental sync: fetching issues updated since {since_str}")
 
         # Only fetch issues that are likely CVE trackers
         # Adjust this JQL based on how CVE trackers are identified in your Jira
@@ -118,8 +119,7 @@ class JiraDataSource(DataSource):
                     jql,
                     startAt=start_at,
                     maxResults=max_results,
-                    fields="summary,status,resolution,priority,assignee,reporter,"
-                    "created,updated,resolutiondate,duedate,project,labels",
+                    fields="summary,status,resolution,priority,assignee,severity,reporter,customfield_12316142,customfield_12326740,created,updated,resolutiondate,duedate,project,labels",
                 )
             except Exception as e:
                 logger.error(f"Jira search failed: {e}")
@@ -149,11 +149,30 @@ class JiraDataSource(DataSource):
         """Convert Jira issue to RawTracker."""
         fields = issue.fields
 
+        # Log each field name and value for debugging
+        #logger.debug(f"=== Fields for {issue.key} ===")
+        #for field_name in dir(fields):
+        #    if not field_name.startswith('_'):
+        #        try:
+        #            value = getattr(fields, field_name)
+        #            if value is not None and not callable(value):
+        #                logger.debug(f"  {field_name}: {value}")
+        #        except Exception:
+        #            pass
+        #logger.debug("=== End fields ===")
+
         # Extract CVE IDs from summary and description
         cve_ids = self._extract_cve_ids(fields.summary or "")
 
         if cve_ids:
             logger.debug(f"Issue {issue.key}: found CVEs {cve_ids}")
+
+        # Extract severity - typically a custom field in Jira
+        # Default to 'Important' if not found
+        severity = self._extract_severity(fields)
+
+        # Extract SLA date - typically a custom field in Jira
+        sla_date = self._extract_sla_date(fields)
 
         return RawTracker(
             source_key=issue.key,
@@ -163,15 +182,46 @@ class JiraDataSource(DataSource):
             status=fields.status.name if fields.status else None,
             resolution=fields.resolution.name if fields.resolution else None,
             priority=fields.priority.name if fields.priority else None,
+            severity=severity,
             assignee=fields.assignee.displayName if fields.assignee else None,
             reporter=fields.reporter.displayName if fields.reporter else None,
             created_date=self._parse_date(fields.created),
             updated_date=self._parse_date(fields.updated),
             resolved_date=self._parse_date(fields.resolutiondate),
             due_date=self._parse_date(fields.duedate),
+            sla_date=sla_date,
             cve_ids=cve_ids,
             labels=[str(label) for label in (fields.labels or [])],
         )
+
+    def _extract_severity(self, fields) -> str:
+        """Extract severity from Jira fields.
+
+        Severity is often a custom field. This method checks common locations.
+        """
+        # Check for customfield_12316142 (common Red Hat severity field)
+        severity_field = getattr(fields, "customfield_12316142", None)
+        if severity_field:
+            # Could be a dict with 'value' or 'name', or a string
+            if hasattr(severity_field, "value"):
+                return severity_field.value
+            elif hasattr(severity_field, "name"):
+                return severity_field.name
+            elif isinstance(severity_field, str):
+                return severity_field
+
+
+    def _extract_sla_date(self, fields) -> datetime | None:
+        """Extract SLA date from Jira fields.
+
+        SLA date is typically stored in a custom field.
+        """
+        # Check for customfield_12326740 (common Red Hat SLA date field)
+        sla_field = getattr(fields, "customfield_12326740", None)
+        if sla_field:
+            return self._parse_date(sla_field)
+
+        return None
 
     def _extract_cve_ids(self, text: str) -> list[str]:
         """Extract CVE IDs from text."""

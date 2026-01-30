@@ -48,7 +48,10 @@ class SyncService:
         from app.extensions import db
         from app.models import CVE, Project, Tracker
 
-        logger.info(f"Starting sync from {source.display_name} for projects: {project_keys}")
+        if since:
+            logger.info(f"Starting incremental sync from {source.display_name} for projects: {project_keys} (since {since})")
+        else:
+            logger.info(f"Starting full sync from {source.display_name} for projects: {project_keys}")
 
         stats = {
             "trackers_created": 0,
@@ -129,10 +132,12 @@ class SyncService:
         tracker.status = raw.status
         tracker.resolution = raw.resolution
         tracker.priority = raw.priority
+        tracker.severity = raw.severity
         tracker.assignee = raw.assignee
         tracker.reporter = raw.reporter
         tracker.created_date = raw.created_date
         tracker.updated_date = raw.updated_date
         tracker.resolved_date = raw.resolved_date
         tracker.due_date = raw.due_date
+        tracker.sla_date = raw.sla_date
         tracker.last_synced_at = datetime.utcnow()
