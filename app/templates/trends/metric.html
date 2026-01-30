@@ -29,10 +29,12 @@
                     <div class="col-md-3">
                         <label class="form-label">{{ filter.label }}</label>
                         {% if filter.type == 'daterange' %}
-                        <input type="date" name="{{ key }}_start" id="{{ key }}_start" class="form-control"
-                               value="{{ request.args.get(key + '_start', '') }}">
-                        <input type="date" name="{{ key }}_end" id="{{ key }}_end" class="form-control mt-1"
-                               value="{{ request.args.get(key + '_end', '') }}">
+                        <div class="d-flex gap-2">
+                            <input type="date" name="{{ key }}_start" id="{{ key }}_start" class="form-control"
+                                   value="{{ request.args.get(key + '_start', '') }}">
+                            <input type="date" name="{{ key }}_end" id="{{ key }}_end" class="form-control"
+                                   value="{{ request.args.get(key + '_end', '') }}">
+                        </div>
                         {% elif filter.type == 'select' %}
                         <select name="{{ key }}" id="{{ key }}" class="form-select">
                             {% if filter.options %}
