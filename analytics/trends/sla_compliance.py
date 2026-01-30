@@ -37,32 +37,19 @@ class SLAComplianceMetric(AnalyticsMetric):
         except (ValueError, TypeError):
             return default
 
-    def _parse_int(self, value: str | int | None, default: int) -> int:
-        """Parse int value, returning default if invalid."""
-        if value is None:
-            return default
-        try:
-            return int(value)
-        except (ValueError, TypeError):
-            return default
-
     def compute(self, **kwargs) -> AnalyticsResult:
         """Compute SLA compliance metrics.
 
         Kwargs:
-            sla_days: Number of days for SLA (default from config).
             date_range_start: Start of date range.
             date_range_end: End of date range.
         """
-        from flask import current_app
         from app.extensions import db
         from app.models import Tracker
 
-        default_sla = current_app.config.get("DEFAULT_SLA_DAYS", 30)
         default_start = datetime.utcnow() - timedelta(days=90)
         default_end = datetime.utcnow()
 
-        sla_days = self._parse_int(kwargs.get("sla_days"), default_sla)
         start_date = self._parse_date(kwargs.get("date_range_start"), default_start)
         end_date = self._parse_date(kwargs.get("date_range_end"), default_end)
 
@@ -73,19 +60,19 @@ class SLAComplianceMetric(AnalyticsMetric):
                 Tracker.resolved_date <= end_date,
             ).all()
 
-            # Calculate SLA compliance
+            # Calculate SLA compliance using per-tracker sla_date
             within_sla = 0
             breached = 0
+            no_sla = 0
 
             for tracker in resolved_trackers:
-                if tracker.created_date and tracker.resolved_date:
-                    days_to_resolve = (
-                        tracker.resolved_date - tracker.created_date
-                    ).days
-                    if days_to_resolve <= sla_days:
+                if tracker.resolved_date and tracker.sla_date:
+                    if tracker.resolved_date <= tracker.sla_date:
                         within_sla += 1
                     else:
                         breached += 1
+                else:
+                    no_sla += 1
 
             total = within_sla + breached
             compliance_rate = (within_sla / total * 100) if total > 0 else 0
@@ -99,11 +86,11 @@ class SLAComplianceMetric(AnalyticsMetric):
             pie_chart = PieChart()
             chart_json = pie_chart.render_json(
                 pie_data,
-                title=f"SLA Compliance ({sla_days} day target)",
+                title="SLA Compliance",
             )
 
             # By-team breakdown if we have team data
-            team_data = self._compute_by_team(resolved_trackers, sla_days)
+            team_data = self._compute_by_team(resolved_trackers)
 
             return AnalyticsResult(
                 metric_id=self.metric_id,
@@ -118,7 +105,7 @@ class SLAComplianceMetric(AnalyticsMetric):
                     "within_sla": within_sla,
                     "breached": breached,
                     "compliance_rate": round(compliance_rate, 1),
-                    "sla_days": sla_days,
+                    "no_sla_date": no_sla,
                 },
             )
 
@@ -129,7 +116,7 @@ class SLAComplianceMetric(AnalyticsMetric):
                 error=str(e),
             )
 
-    def _compute_by_team(self, trackers: list, sla_days: int) -> dict:
+    def _compute_by_team(self, trackers: list) -> dict:
         """Compute SLA compliance breakdown by team."""
         teams = {}
 
@@ -141,9 +128,8 @@ class SLAComplianceMetric(AnalyticsMetric):
             if team_name not in teams:
                 teams[team_name] = {"within": 0, "breached": 0}
 
-            if tracker.created_date and tracker.resolved_date:
-                days = (tracker.resolved_date - tracker.created_date).days
-                if days <= sla_days:
+            if tracker.resolved_date and tracker.sla_date:
+                if tracker.resolved_date <= tracker.sla_date:
                     teams[team_name]["within"] += 1
                 else:
                     teams[team_name]["breached"] += 1
@@ -168,9 +154,4 @@ class SLAComplianceMetric(AnalyticsMetric):
                 ],
             },
             "date_range": {"type": "daterange", "label": "Date Range"},
-            "sla_days": {
-                "type": "number",
-                "label": "SLA Days",
-                "default": 30,
-            },
         }
