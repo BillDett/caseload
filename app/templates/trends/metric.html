@@ -27,7 +27,9 @@
                 <form method="GET" class="row g-3">
                     {% for key, filter in filters.items() %}
                     <div class="col-md-3">
+                        {% if filter.type != 'checkbox' %}
                         <label class="form-label">{{ filter.label }}</label>
+                        {% endif %}
                         {% if filter.type == 'daterange' %}
                         <div class="d-flex gap-2">
                             <input type="date" name="{{ key }}_start" id="{{ key }}_start" class="form-control"
@@ -51,6 +53,12 @@
                         {% elif filter.type == 'number' %}
                         <input type="number" name="{{ key }}" class="form-control"
                                value="{{ request.args.get(key, filter.get('default', '')) }}">
+                        {% elif filter.type == 'checkbox' %}
+                        <div class="form-check mt-2">
+                            <input type="checkbox" name="{{ key }}" id="{{ key }}" class="form-check-input"
+                                   {% if request.args.get(key) == 'on' %}checked{% endif %}>
+                            <label class="form-check-label" for="{{ key }}">{{ filter.label }}</label>
+                        </div>
                         {% else %}
                         <input type="text" name="{{ key }}" class="form-control"
                                value="{{ request.args.get(key, '') }}"

@@ -45,6 +45,7 @@ class TrackerVolumeMetric(AnalyticsMetric):
         Kwargs:
             date_range_start: Start of date range.
             date_range_end: End of date range.
+            show_severity: Whether to show severity breakdown lines.
         """
         from app.extensions import db
         from app.models import Tracker
@@ -54,6 +55,7 @@ class TrackerVolumeMetric(AnalyticsMetric):
 
         start_date = self._parse_date(kwargs.get("date_range_start"), default_start)
         end_date = self._parse_date(kwargs.get("date_range_end"), default_end)
+        show_severity = kwargs.get("show_severity") == "on"
 
         try:
             trackers = db.session.query(Tracker).filter(
@@ -66,15 +68,23 @@ class TrackerVolumeMetric(AnalyticsMetric):
             open_counts = []
             closed_counts = []
 
+            # Severity breakdown counts
+            critical_counts = []
+            important_counts = []
+            moderate_counts = []
+
             for week_end in date_range:
                 week_start = week_end - timedelta(days=7)
-                open_count = sum(
-                    1
-                    for t in trackers
+
+                # Count open trackers at this point in time
+                open_at_week = [
+                    t for t in trackers
                     if t.created_date
                     and t.created_date <= week_end
                     and (not t.resolved_date or t.resolved_date > week_end)
-                )
+                ]
+                open_counts.append(len(open_at_week))
+
                 closed_count = sum(
                     1
                     for t in trackers
@@ -82,13 +92,36 @@ class TrackerVolumeMetric(AnalyticsMetric):
                     and t.resolved_date > week_start
                     and t.resolved_date <= week_end
                 )
-                open_counts.append(open_count)
                 closed_counts.append(closed_count)
+
+                # Count by severity (open trackers at this point)
+                critical_counts.append(sum(
+                    1 for t in open_at_week
+                    if t.severity and t.severity.lower() == 'critical'
+                ))
+                important_counts.append(sum(
+                    1 for t in open_at_week
+                    if t.severity and t.severity.lower() == 'important'
+                ))
+                moderate_counts.append(sum(
+                    1 for t in open_at_week
+                    if t.severity and t.severity.lower() == 'moderate'
+                ))
+
+            # Build chart data
+            y_series = [open_counts, closed_counts]
+            names = ["Open Trackers", "Closed Trackers"]
+            line_dashes = ["solid", "solid"]
+
+            if show_severity:
+                y_series.extend([critical_counts, important_counts, moderate_counts])
+                names.extend(["Critical", "Important", "Moderate"])
+                line_dashes.extend(["dash", "dash", "dash"])
 
             data = {
                 "x": [d.strftime("%Y-%m-%d") for d in date_range],
-                "y": [open_counts, closed_counts],
-                "names": ["Open Trackers", "Closed Trackers"],
+                "y": y_series,
+                "names": names,
             }
 
             chart = LineChart()
@@ -97,6 +130,7 @@ class TrackerVolumeMetric(AnalyticsMetric):
                 title="CVE Tracker Volume Over Time",
                 x_label="Date",
                 y_label="Count",
+                line_dashes=line_dashes,
             )
 
             # Count trackers closed with inaccurate resolutions
@@ -147,4 +181,8 @@ class TrackerVolumeMetric(AnalyticsMetric):
                 ],
             },
             "date_range": {"type": "daterange", "label": "Date Range"},
+            "show_severity": {
+                "type": "checkbox",
+                "label": "Show Severity Breakdown",
+            },
         }

@@ -79,7 +79,7 @@ class LineChart(Visualization):
 
         Args:
             data: Dict with 'x' and 'y' keys (or list of y series), or DataFrame.
-            **options: title, x_label, y_label.
+            **options: title, x_label, y_label, line_dashes (list of dash styles per series).
         """
         if hasattr(data, "to_dict"):
             x_col = options.get("x_col", data.columns[0])
@@ -89,10 +89,15 @@ class LineChart(Visualization):
             fig = go.Figure()
             x = data.get("x", [])
             y_series = data.get("y", [])
+            line_dashes = options.get("line_dashes", [])
             if y_series and isinstance(y_series[0], (list, tuple)):
                 for i, y in enumerate(y_series):
                     name = data.get("names", [f"Series {i+1}"])[i]
-                    fig.add_trace(go.Scatter(x=x, y=y, mode="lines", name=name))
+                    dash = line_dashes[i] if i < len(line_dashes) else "solid"
+                    fig.add_trace(go.Scatter(
+                        x=x, y=y, mode="lines", name=name,
+                        line=dict(dash=dash)
+                    ))
             else:
                 fig.add_trace(go.Scatter(x=x, y=y_series, mode="lines"))
             fig.update_layout(title=options.get("title", ""))

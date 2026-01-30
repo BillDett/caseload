@@ -3,27 +3,116 @@
     {
       "name": "OpenShift",
       "description": "OpenShift Core",
-      "projects": ["OCPBUGS"]
+      "projects": [
+        "OCPBUGS"
+      ]
     },
     {
       "name": "Quay",
       "description": "RH Quay, quay.io",
-      "projects": ["PROJQUAY"]
+      "projects": [
+        "PROJQUAY"
+      ]
     },
     {
       "name": "ACS",
       "description": "Advanced Cluster Security",
-      "projects": ["ROX"]
+      "projects": [
+        "ROX"
+      ]
+    },
+    {
+      "name": "ISC",
+      "description": "Infrastructure Security and Compliance",
+      "projects": [
+        "CMP"
+      ]
+    },
+    {
+      "name": "OLS",
+      "description": "OpenShift Lightspeed Service",
+      "projects": [
+        "OLS"
+      ]
+    },
+    {
+      "name": "OLM",
+      "description": "Advanced Cluster Security",
+      "projects": [
+        "ROX"
+      ]
+    },
+    {
+      "name": "COO",
+      "description": "Cluster Observability Operator",
+      "projects": [
+        "COO"
+      ]
+    },
+    {
+      "name": "LOG",
+      "description": "OpenShift Logging",
+      "projects": [
+        "LOG"
+      ]
+    },
+    {
+      "name": "Tracing",
+      "description": "Distributed Tracing",
+      "projects": [
+        "TRACING"
+      ]
+    },
+    {
+      "name": "COO",
+      "description": "Cluster Observability Operator",
+      "projects": [
+        "COO"
+      ]
+    },
+    {
+      "name": "Power Monitoring",
+      "description": "Power Monitoring for OpenShift",
+      "projects": [
+        "POWERMON"
+      ]
+    },
+    {
+      "name": "Virtualization",
+      "description": "OpenShift Virtualization",
+      "projects": [
+        "CNV"
+      ]
+    },
+    {
+      "name": "Virtualization Bootcamp",
+      "description": "OpenShift Virtualization Bootcamp",
+      "projects": [
+        "OVB"
+      ]
     },
     {
       "name": "RHEL",
       "description": "Red Hat Enterprise Linux",
-      "projects": ["RHEL"]
+      "projects": [
+        "RHEL"
+      ]
     }
   ],
   "project_dependencies": {
-    "OCPBUGS": ["RHEL"],
-    "PROJQUAY": ["RHEL", "OCPBUGS"],
-    "ROX": ["RHEL", "OCPBUGS"]
+    "OCPBUGS": [
+      "RHEL"
+    ],
+    "PROJQUAY": [
+      "RHEL",
+      "OCPBUGS"
+    ],
+    "ROX": [
+      "RHEL",
+      "OCPBUGS"
+    ],
+    "ISC": [
+      "RHEL"
+    ]
   }
 }
