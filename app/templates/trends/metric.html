@@ -136,6 +136,8 @@
                     startDate.setDate(endDate.getDate() - 30);
                 } else if (value === 'last_quarter') {
                     startDate.setDate(endDate.getDate() - 90);
+                } else if (value === 'last_year') {
+                    startDate.setDate(endDate.getDate() - 365);
                 }
 
                 dateStartInput.value = startDate.toISOString().split('T')[0];

@@ -143,6 +143,7 @@ class TrackerVolumeMetric(AnalyticsMetric):
                     {"value": "last_week", "label": "Last Week"},
                     {"value": "last_month", "label": "Last Month"},
                     {"value": "last_quarter", "label": "Last Quarter"},
+                    {"value": "last_year", "label": "Last Year"},
                 ],
             },
             "date_range": {"type": "daterange", "label": "Date Range"},
