@@ -169,7 +169,7 @@ class SankeyDiagram(Visualization):
         """Render Sankey diagram to Plotly JSON.
 
         Args:
-            data: Dict with 'labels', 'sources', 'targets', 'values', and optionally 'colors'.
+            data: Dict with 'labels', 'sources', 'targets', 'values', and optionally 'colors', 'urls'.
             **options: title, height.
         """
         labels = data.get("labels", [])
@@ -177,6 +177,7 @@ class SankeyDiagram(Visualization):
         targets = data.get("targets", [])
         values = data.get("values", [])
         colors = data.get("colors", [])
+        urls = data.get("urls", [])
 
         fig = go.Figure(data=[go.Sankey(
             node=dict(
@@ -185,6 +186,7 @@ class SankeyDiagram(Visualization):
                 line=dict(color="black", width=0.5),
                 label=labels,
                 color=colors if colors else None,
+                customdata=urls if urls else None,
             ),
             link=dict(
                 source=sources,

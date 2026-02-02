@@ -1,5 +1,6 @@
 """Blast radius metric for individual CVEs."""
 
+import urllib.parse
 from collections import defaultdict
 from typing import Literal
 
@@ -56,16 +57,23 @@ class BlastRadiusMetric(AnalyticsMetric):
 
         return highest
 
-    def _build_sankey_data(self, trackers: list) -> dict:
+    def _build_sankey_data(self, trackers: list, cve_id: str) -> dict:
         """Build Sankey diagram data from trackers.
 
         Flow: Project -> Created Date -> Due Date -> SLA Date
+
+        Args:
+            trackers: List of tracker objects.
+            cve_id: CVE identifier for building Jira search URLs.
         """
         # Collect unique values for each column
         projects = set()
         created_dates = set()
         due_dates = set()
         sla_dates = set()
+
+        # Track due dates that are past SLA (due_date > sla_date)
+        due_dates_past_sla = set()
 
         # Build tracker data with all fields
         tracker_data = []
@@ -79,6 +87,10 @@ class BlastRadiusMetric(AnalyticsMetric):
             created_dates.add(created)
             due_dates.add(due)
             sla_dates.add(sla)
+
+            # Check if due date is after SLA date
+            if t.due_date and t.sla_date and t.due_date > t.sla_date:
+                due_dates_past_sla.add(due)
 
             tracker_data.append({
                 "project": project,
@@ -137,15 +149,21 @@ class BlastRadiusMetric(AnalyticsMetric):
             targets.append(node_index[tgt])
             values.append(count)
 
-        # Define colors for each column
+        # Define colors for each node
         colors = []
+
         for label in labels:
             if label.startswith("Proj:"):
                 colors.append("rgba(31, 119, 180, 0.8)")  # Blue
             elif label.startswith("Created:"):
                 colors.append("rgba(255, 127, 14, 0.8)")  # Orange
             elif label.startswith("Due:"):
-                colors.append("rgba(44, 160, 44, 0.8)")   # Green
+                # Extract the date from the label and check if it's past SLA
+                due_date_str = label.replace("Due: ", "")
+                if due_date_str in due_dates_past_sla:
+                    colors.append("rgba(214, 39, 40, 0.8)")   # Red - past SLA
+                else:
+                    colors.append("rgba(44, 160, 44, 0.8)")   # Green - within SLA
             else:  # SLA
                 colors.append("rgba(214, 39, 40, 0.8)")   # Red
 
@@ -188,7 +206,7 @@ class BlastRadiusMetric(AnalyticsMetric):
             affected_teams = cve.affected_teams
 
             # Build Sankey diagram data
-            sankey_data = self._build_sankey_data(trackers)
+            sankey_data = self._build_sankey_data(trackers, cve_id)
 
             sankey = SankeyDiagram()
             chart_json = sankey.render_json(
@@ -199,12 +217,30 @@ class BlastRadiusMetric(AnalyticsMetric):
 
             # Team impact summary
             team_tracker_counts = {}
+            team_projects = {}  # Track projects per team for URL generation
             for tracker in trackers:
                 if tracker.project and tracker.project.team:
                     team_name = tracker.project.team.name
                     team_tracker_counts[team_name] = (
                         team_tracker_counts.get(team_name, 0) + 1
                     )
+                    # Track projects for this team
+                    if team_name not in team_projects:
+                        team_projects[team_name] = set()
+                    team_projects[team_name].add(tracker.project.key)
+
+            # Sort by count descending
+            team_tracker_counts = dict(
+                sorted(team_tracker_counts.items(), key=lambda x: x[1], reverse=True)
+            )
+
+            # Build team URLs for Jira search
+            jira_base_url = "https://issues.redhat.com"
+            team_urls = {}
+            for team_name, projects in team_projects.items():
+                projects_str = ", ".join(f'"{p}"' for p in projects)
+                jql = f'project IN ({projects_str}) AND type=Vulnerability AND labels="{cve_id}"'
+                team_urls[team_name] = f"{jira_base_url}/issues/?jql={urllib.parse.quote(jql)}"
 
             # Date skew analysis
             created_dates = [t.created_date for t in trackers if t.created_date]
@@ -223,6 +259,7 @@ class BlastRadiusMetric(AnalyticsMetric):
                 data={
                     "sankey": sankey_data,
                     "team_impact": team_tracker_counts,
+                    "team_urls": team_urls,
                 },
                 chart_json=chart_json,
                 summary={

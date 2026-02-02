@@ -130,7 +130,13 @@
                     <tbody>
                         {% for team, count in result.data.team_impact.items() %}
                         <tr>
-                            <td>{{ team }}</td>
+                            <td>
+                                {% if result.data.team_urls and result.data.team_urls[team] %}
+                                <a href="{{ result.data.team_urls[team] }}" target="_blank">{{ team }} <i class="bi bi-box-arrow-up-right small"></i></a>
+                                {% else %}
+                                {{ team }}
+                                {% endif %}
+                            </td>
                             <td>{{ count }}</td>
                         </tr>
                         {% endfor %}
