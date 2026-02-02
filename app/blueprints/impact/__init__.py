@@ -8,12 +8,38 @@ bp = Blueprint("impact", __name__)
 @bp.route("/")
 def index():
     """Vulnerability Impact dashboard."""
-    from app.models import CVE
+    from sqlalchemy import func
 
-    # Get recent CVEs for quick access
-    recent_cves = CVE.query.order_by(CVE.created_at.desc()).limit(10).all()
+    from app.extensions import db
+    from app.models import CVE, Tracker
 
-    return render_template("impact/index.html", recent_cves=recent_cves)
+    page = request.args.get("page", 1, type=int)
+    per_page = 20
+
+    # Get CVEs sorted by most recent tracker created_date (descending)
+    # Subquery to get max created_date per CVE
+    max_created_subq = (
+        db.session.query(
+            Tracker.cve_id,
+            func.max(Tracker.created_date).label("max_created")
+        )
+        .group_by(Tracker.cve_id)
+        .subquery()
+    )
+
+    # Join CVEs with the subquery and order by max created_date
+    pagination = (
+        db.session.query(CVE)
+        .join(max_created_subq, CVE.id == max_created_subq.c.cve_id)
+        .order_by(max_created_subq.c.max_created.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+
+    return render_template(
+        "impact/index.html",
+        recent_cves=pagination.items,
+        pagination=pagination,
+    )
 
 
 @bp.route("/cve/<cve_id>")

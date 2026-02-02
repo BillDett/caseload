@@ -36,13 +36,6 @@
       ]
     },
     {
-      "name": "OLM",
-      "description": "Advanced Cluster Security",
-      "projects": [
-        "ROX"
-      ]
-    },
-    {
       "name": "COO",
       "description": "Cluster Observability Operator",
       "projects": [
