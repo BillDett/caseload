@@ -121,6 +121,175 @@ class LineChart(Visualization):
         """
 
 
+class BoxPlot(Visualization):
+    """Box plot visualization for statistical distributions."""
+
+    @property
+    def viz_type(self) -> str:
+        return "box"
+
+    def render_json(self, data: Any, **options) -> str:
+        """Render box plot to Plotly JSON.
+
+        Args:
+            data: Dict with 'values' (list of numbers) or 'groups' (dict of name -> values).
+            **options: title, x_label, y_label, horizontal (bool), showpoints (bool).
+        """
+        fig = go.Figure()
+        horizontal = options.get("horizontal", False)
+
+        if "groups" in data:
+            # Multiple box plots
+            for name, values in data["groups"].items():
+                trace_kwargs = {
+                    "name": name,
+                    "boxpoints": "all" if options.get("showpoints", True) else "outliers",
+                    "jitter": 0.3,
+                    "pointpos": 0,
+                    "boxmean": True,  # Show mean as dashed line
+                    "marker": dict(
+                        color="rgba(31, 119, 180, 0.7)",
+                        outliercolor="rgba(31, 119, 180, 1)",
+                        size=6,
+                    ),
+                    "line": dict(color="rgba(31, 119, 180, 1)"),
+                    "fillcolor": "rgba(31, 119, 180, 0.3)",
+                }
+                if horizontal:
+                    trace_kwargs["x"] = values
+                else:
+                    trace_kwargs["y"] = values
+                fig.add_trace(go.Box(**trace_kwargs))
+        else:
+            # Single box plot
+            trace_kwargs = {
+                "name": data.get("name", ""),
+                "boxpoints": "all" if options.get("showpoints", True) else "outliers",
+                "jitter": 0.3,
+                "pointpos": 0,
+                "boxmean": True,  # Show mean as dashed line
+                "marker": dict(
+                    color="rgba(31, 119, 180, 0.7)",
+                    outliercolor="rgba(31, 119, 180, 1)",
+                    size=6,
+                ),
+                "line": dict(color="rgba(31, 119, 180, 1)"),
+                "fillcolor": "rgba(31, 119, 180, 0.3)",
+            }
+            if horizontal:
+                trace_kwargs["x"] = data.get("values", [])
+            else:
+                trace_kwargs["y"] = data.get("values", [])
+            fig.add_trace(go.Box(**trace_kwargs))
+
+        layout_kwargs = {
+            "title": options.get("title", ""),
+            "showlegend": len(data.get("groups", {})) > 1,
+        }
+
+        if horizontal:
+            layout_kwargs["xaxis_title"] = options.get("x_label", "")
+            layout_kwargs["yaxis"] = dict(showticklabels=False)
+            layout_kwargs["height"] = options.get("height", 200)
+        else:
+            layout_kwargs["yaxis_title"] = options.get("y_label", "")
+
+        fig.update_layout(**layout_kwargs)
+
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+
+    def render_html(self, data: Any, **options) -> str:
+        """Render box plot to HTML."""
+        chart_json = self.render_json(data, **options)
+        div_id = options.get("div_id", "chart")
+        return f"""
+        <div id="{div_id}"></div>
+        <script>
+            Plotly.newPlot('{div_id}', {chart_json}.data, {chart_json}.layout);
+        </script>
+        """
+
+
+class ScatterTimeline(Visualization):
+    """Scatter plot timeline for showing events across categories."""
+
+    @property
+    def viz_type(self) -> str:
+        return "scatter_timeline"
+
+    def render_json(self, data: Any, **options) -> str:
+        """Render scatter timeline to Plotly JSON.
+
+        Args:
+            data: Dict with 'points' list of {x: date_str, y: category, label: str, color: str}.
+            **options: title, x_label, height, x_range (tuple of min/max dates).
+        """
+        fig = go.Figure()
+
+        points = data.get("points", [])
+        categories = data.get("categories", [])
+
+        # Group points by category for consistent coloring
+        category_points = {}
+        for point in points:
+            cat = point.get("y", "")
+            if cat not in category_points:
+                category_points[cat] = {"x": [], "text": [], "colors": []}
+            category_points[cat]["x"].append(point.get("x"))
+            category_points[cat]["text"].append(point.get("label", ""))
+            category_points[cat]["colors"].append(point.get("color", "rgba(31, 119, 180, 0.8)"))
+
+        # Create a trace for each category
+        for cat in categories:
+            if cat in category_points:
+                fig.add_trace(go.Scatter(
+                    x=category_points[cat]["x"],
+                    y=[cat] * len(category_points[cat]["x"]),
+                    mode="markers",
+                    name=cat,
+                    text=category_points[cat]["text"],
+                    hovertemplate="%{text}<br>%{x}<extra></extra>",
+                    marker=dict(
+                        size=12,
+                        color=category_points[cat]["colors"],
+                        line=dict(width=1, color="white"),
+                    ),
+                ))
+
+        x_range = options.get("x_range")
+        layout_kwargs = {
+            "title": options.get("title", ""),
+            "xaxis": dict(
+                title=options.get("x_label", "Date"),
+                type="date",
+                range=x_range if x_range else None,
+            ),
+            "yaxis": dict(
+                title="",
+                categoryorder="array",
+                categoryarray=list(reversed(categories)),
+            ),
+            "height": options.get("height", 300),
+            "showlegend": False,
+            "hovermode": "closest",
+        }
+
+        fig.update_layout(**layout_kwargs)
+
+        return json.dumps(fig, cls=PlotlyJSONEncoder)
+
+    def render_html(self, data: Any, **options) -> str:
+        """Render scatter timeline to HTML."""
+        chart_json = self.render_json(data, **options)
+        div_id = options.get("div_id", "chart")
+        return f"""
+        <div id="{div_id}"></div>
+        <script>
+            Plotly.newPlot('{div_id}', {chart_json}.data, {chart_json}.layout);
+        </script>
+        """
+
+
 class PieChart(Visualization):
     """Pie chart visualization."""
 

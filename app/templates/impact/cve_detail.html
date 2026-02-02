@@ -112,6 +112,61 @@
     </div>
 </div>
 
+{% if result.data.creation_timeline_json %}
+<div class="row mb-4">
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-calendar-range"></i> Tracker Creation Timeline</h5>
+            </div>
+            <div class="card-body">
+                <div id="timeline-chart"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock-history"></i> Timeline Stats</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        {% if result.data.timeline_stats %}
+                        <tr>
+                            <td>Total Trackers</td>
+                            <td><strong>{{ result.data.timeline_stats.total_trackers }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>First Created</td>
+                            <td><strong>{{ result.data.timeline_stats.first_created }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Last Created</td>
+                            <td><strong>{{ result.data.timeline_stats.last_created }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Date Range</td>
+                            <td><strong>{{ result.data.timeline_stats.date_range_days }}</strong> days</td>
+                        </tr>
+                        {% if result.data.timeline_stats.std_dev_days is defined %}
+                        <tr>
+                            <td>Std Deviation</td>
+                            <td><strong>{{ result.data.timeline_stats.std_dev_days }}</strong> days</td>
+                        </tr>
+                        {% endif %}
+                        {% endif %}
+                    </tbody>
+                </table>
+                <p class="text-muted small mt-2 mb-0">
+                    Shows when each tracker was created, grouped by project.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% if result.data.team_impact %}
 <div class="row mb-4">
     <div class="col">
@@ -156,6 +211,12 @@
 <script>
     var chartData = {{ result.chart_json | safe }};
     Plotly.newPlot('chart', chartData.data, chartData.layout, {responsive: true});
+</script>
+{% endif %}
+{% if result.data.creation_timeline_json %}
+<script>
+    var timelineData = {{ result.data.creation_timeline_json | safe }};
+    Plotly.newPlot('timeline-chart', timelineData.data, timelineData.layout, {responsive: true});
 </script>
 {% endif %}
 {% endblock %}

@@ -2,11 +2,12 @@
 
 import urllib.parse
 from collections import defaultdict
+from datetime import timedelta
 from typing import Literal
 
 from analytics.base import AnalyticsMetric, AnalyticsResult
 from analytics.registry import AnalyticsRegistry
-from analytics.visualizations import SankeyDiagram
+from analytics.visualizations import SankeyDiagram, ScatterTimeline
 
 
 @AnalyticsRegistry.register
@@ -250,6 +251,61 @@ class BlastRadiusMetric(AnalyticsMetric):
                 latest = max(created_dates)
                 date_skew = (latest - earliest).days
 
+            # Creation Date Timeline: scatter plot showing when trackers were created by project
+            creation_timeline_json = None
+            timeline_stats = {}
+
+            # Collect all created dates and SLA dates to determine x-axis range
+            all_created = [t.created_date for t in trackers if t.created_date]
+            all_sla = [t.sla_date for t in trackers if t.sla_date]
+
+            if all_created:
+                min_date = min(all_created)
+                max_date = max(all_sla) if all_sla else max(all_created)
+
+                # Build scatter points grouped by project
+                points = []
+                projects_seen = set()
+
+                for t in trackers:
+                    if t.created_date:
+                        project_key = self._get_project_from_jira_key(t.jira_key)
+                        projects_seen.add(project_key)
+                        points.append({
+                            "x": t.created_date.strftime("%Y-%m-%d"),
+                            "y": project_key,
+                            "label": t.jira_key,
+                            "color": "rgba(31, 119, 180, 0.8)",
+                        })
+
+                # Sort projects alphabetically
+                categories = sorted(projects_seen)
+
+                # Calculate timeline statistics
+                if len(all_created) > 1:
+                    import statistics
+                    # Days from first creation to each subsequent creation
+                    days_from_first = [(d - min_date).days for d in all_created]
+                    timeline_stats["total_trackers"] = len(all_created)
+                    timeline_stats["date_range_days"] = (max_date - min_date).days
+                    timeline_stats["first_created"] = min_date.strftime("%Y-%m-%d")
+                    timeline_stats["last_created"] = max(all_created).strftime("%Y-%m-%d")
+                    if len(days_from_first) > 1:
+                        timeline_stats["std_dev_days"] = round(statistics.stdev(days_from_first), 1)
+
+                # Generate scatter timeline
+                scatter = ScatterTimeline()
+                creation_timeline_json = scatter.render_json(
+                    {"points": points, "categories": categories},
+                    title="Tracker Creation Timeline by Project",
+                    x_label="Date",
+                    x_range=[
+                        (min_date - timedelta(days=3)).strftime("%Y-%m-%d"),
+                        (max_date + timedelta(days=3)).strftime("%Y-%m-%d"),
+                    ],
+                    height=max(150, 80 + len(categories) * 40),
+                )
+
             # Get highest severity from trackers
             severity = self._get_highest_severity(trackers)
 
@@ -260,6 +316,8 @@ class BlastRadiusMetric(AnalyticsMetric):
                     "sankey": sankey_data,
                     "team_impact": team_tracker_counts,
                     "team_urls": team_urls,
+                    "creation_timeline_json": creation_timeline_json,
+                    "timeline_stats": timeline_stats,
                 },
                 chart_json=chart_json,
                 summary={
