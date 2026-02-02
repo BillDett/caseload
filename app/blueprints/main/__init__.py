@@ -23,7 +23,6 @@ def index():
     # Check if Jira is configured
     jira_configured = bool(
         current_app.config.get("JIRA_SERVER")
-        and current_app.config.get("JIRA_USERNAME")
         and current_app.config.get("JIRA_API_TOKEN")
     )
 
@@ -57,17 +56,15 @@ def sync():
 
     # Then sync from Jira if configured
     jira_server = current_app.config.get("JIRA_SERVER")
-    jira_username = current_app.config.get("JIRA_USERNAME")
     jira_token = current_app.config.get("JIRA_API_TOKEN")
 
-    if jira_server and jira_username and jira_token:
+    if jira_server and jira_token:
         try:
             from datetime import datetime
             from app.models import Util
 
             jira = JiraDataSource(
                 server=jira_server,
-                username=jira_username,
                 api_token=jira_token,
             )
 

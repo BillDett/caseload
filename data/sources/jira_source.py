@@ -23,18 +23,15 @@ class JiraDataSource(DataSource):
     def __init__(
         self,
         server: str,
-        username: str,
         api_token: str,
     ):
         """Initialize Jira data source.
 
         Args:
             server: Jira server URL.
-            username: Jira username/email.
-            api_token: Jira API token.
+            api_token: Jira API token (Personal Access Token).
         """
         self.server = server
-        self.username = username
         self.api_token = api_token
         self._client = None
 

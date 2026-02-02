@@ -55,8 +55,7 @@ Create a `.env` file in the project root or export these environment variables:
 | `SECRET_KEY` | Yes (prod) | `dev-secret-key...` | Flask secret key for session security |
 | `DATABASE_URL` | No | `sqlite:///instance/caseload.db` | Database connection URL |
 | `JIRA_SERVER` | Yes | - | Jira server URL (e.g., `https://issues.redhat.com`) |
-| `JIRA_USERNAME` | Yes | - | Jira username or email |
-| `JIRA_API_TOKEN` | Yes | - | Jira API token (not password) |
+| `JIRA_API_TOKEN` | Yes | - | Jira Personal Access Token |
 
 ### Example .env file
 
@@ -66,14 +65,13 @@ SECRET_KEY=your-secure-secret-key-here
 
 # Jira Configuration
 JIRA_SERVER=https://issues.redhat.com
-JIRA_USERNAME=your.email@example.com
-JIRA_API_TOKEN=your-jira-api-token
+JIRA_API_TOKEN=your-jira-personal-access-token
 ```
 
-### Generating a Jira API Token
+### Generating a Jira Personal Access Token
 
 1. Log into your Jira instance
-2. Go to Profile > Personal Access Tokens (or API Tokens)
+2. Go to Profile > Personal Access Tokens
 3. Create a new token with appropriate permissions
 4. Copy the token to your `.env` file
 
@@ -135,7 +133,6 @@ with app.app_context():
     # Create Jira data source
     source = JiraDataSource(
         server="https://issues.redhat.com",
-        username="your.email@example.com",
         api_token="your-api-token",
     )
 
@@ -176,7 +173,6 @@ app = create_app()
 with app.app_context():
     source = JiraDataSource(
         server=os.environ["JIRA_SERVER"],
-        username=os.environ["JIRA_USERNAME"],
         api_token=os.environ["JIRA_API_TOKEN"],
     )
 
