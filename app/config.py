@@ -21,9 +21,6 @@ class Config:
     JIRA_USERNAME = os.environ.get("JIRA_USERNAME", "")
     JIRA_API_TOKEN = os.environ.get("JIRA_API_TOKEN", "")
 
-    # Analytics settings
-    DEFAULT_SLA_DAYS = int(os.environ.get("DEFAULT_SLA_DAYS", "30"))
-
 
 class DevelopmentConfig(Config):
     """Development configuration."""
