@@ -2,6 +2,8 @@
 
 from flask import Blueprint, jsonify, request
 
+from app.extensions import db
+
 bp = Blueprint("api", __name__)
 
 
@@ -129,6 +131,37 @@ def get_cve(cve_id: str):
             ],
         }
     )
+
+
+@bp.route("/projects/<project_key>/components")
+def list_components(project_key: str):
+    """Return HTML option elements for downstream components in a project."""
+    from app.models import Project, Tracker
+
+    project = Project.query.filter_by(key=project_key).first()
+    if not project:
+        return '<option value="">No components found</option>'
+
+    components = (
+        db.session.query(Tracker.downstream_component)
+        .filter(
+            Tracker.project_id == project.id,
+            Tracker.downstream_component.isnot(None),
+            Tracker.downstream_component != "",
+            Tracker.cve_id.isnot(None),
+        )
+        .distinct()
+        .order_by(Tracker.downstream_component)
+        .all()
+    )
+
+    if not components:
+        return '<option value="">No components found</option>'
+
+    html = '<option value="">-- Select Component --</option>'
+    for (comp,) in components:
+        html += f'<option value="{comp}">{comp}</option>'
+    return html
 
 
 @bp.route("/trackers")

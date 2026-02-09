@@ -24,6 +24,7 @@ class Tracker(db.Model):
     sla_date = db.Column(db.DateTime, nullable=True)  # SLA target date from Jira
     sla_breach = db.Column(db.Boolean, default=False, nullable=False)
     closure_reason = db.Column(db.String(100), nullable=True)
+    downstream_component = db.Column(db.String(255), nullable=True)
 
     # Foreign keys
     project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=True)

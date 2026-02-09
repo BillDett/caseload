@@ -25,6 +25,7 @@ class RawTracker:
     resolved_date: datetime | None = None
     due_date: datetime | None = None
     sla_date: datetime | None = None  # SLA target date
+    downstream_component: str | None = None
     cve_ids: list[str] = field(default_factory=list)
     labels: list[str] = field(default_factory=list)
     custom_fields: dict = field(default_factory=dict)

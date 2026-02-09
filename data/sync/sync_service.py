@@ -140,4 +140,5 @@ class SyncService:
         tracker.resolved_date = raw.resolved_date
         tracker.due_date = raw.due_date
         tracker.sla_date = raw.sla_date
+        tracker.downstream_component = raw.downstream_component
         tracker.last_synced_at = datetime.utcnow()

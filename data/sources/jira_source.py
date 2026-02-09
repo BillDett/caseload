@@ -116,7 +116,7 @@ class JiraDataSource(DataSource):
                     jql,
                     startAt=start_at,
                     maxResults=max_results,
-                    fields="summary,status,resolution,priority,assignee,severity,reporter,customfield_12316142,customfield_12326740,created,updated,resolutiondate,duedate,project,labels",
+                    fields="summary,status,resolution,priority,assignee,severity,reporter,customfield_12316142,customfield_12326740,customfield_12324752,created,updated,resolutiondate,duedate,project,labels",
                 )
             except Exception as e:
                 logger.error(f"Jira search failed: {e}")
@@ -171,6 +171,9 @@ class JiraDataSource(DataSource):
         # Extract SLA date - typically a custom field in Jira
         sla_date = self._extract_sla_date(fields)
 
+        # Extract downstream component name
+        downstream_component = self._extract_downstream_component(fields)
+
         return RawTracker(
             source_key=issue.key,
             source_type=self.SOURCE_TYPE,
@@ -187,6 +190,7 @@ class JiraDataSource(DataSource):
             resolved_date=self._parse_date(fields.resolutiondate),
             due_date=self._parse_date(fields.duedate),
             sla_date=sla_date,
+            downstream_component=downstream_component,
             cve_ids=cve_ids,
             labels=[str(label) for label in (fields.labels or [])],
         )
@@ -218,6 +222,18 @@ class JiraDataSource(DataSource):
         if sla_field:
             return self._parse_date(sla_field)
 
+        return None
+
+    def _extract_downstream_component(self, fields) -> str | None:
+        """Extract downstream component name from Jira fields."""
+        component_field = getattr(fields, "customfield_12324752", None)
+        if component_field:
+            if hasattr(component_field, "value"):
+                return component_field.value
+            elif hasattr(component_field, "name"):
+                return component_field.name
+            elif isinstance(component_field, str):
+                return component_field
         return None
 
     def _extract_cve_ids(self, text: str) -> list[str]:
