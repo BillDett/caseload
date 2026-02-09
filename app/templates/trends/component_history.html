@@ -81,10 +81,19 @@
         </div>
     </div>
     {% if status_chart_json %}
-    <div class="col-md-8">
+    <div class="col-md-{{ '4' if resolution_chart_json else '8' }}">
         <div class="card h-100">
             <div class="card-body">
                 <div id="status-chart"></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if resolution_chart_json %}
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div id="resolution-chart"></div>
             </div>
         </div>
     </div>
@@ -158,6 +167,14 @@
     statusChartData.layout.height = 250;
     statusChartData.layout.margin = {t: 30, b: 10, l: 10, r: 10};
     Plotly.newPlot('status-chart', statusChartData.data, statusChartData.layout, {responsive: true});
+</script>
+{% endif %}
+{% if resolution_chart_json %}
+<script>
+    var resolutionChartData = {{ resolution_chart_json | safe }};
+    resolutionChartData.layout.height = 250;
+    resolutionChartData.layout.margin = {t: 30, b: 10, l: 10, r: 10};
+    Plotly.newPlot('resolution-chart', resolutionChartData.data, resolutionChartData.layout, {responsive: true});
 </script>
 {% endif %}
 {% if chart_json %}

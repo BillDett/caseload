@@ -92,6 +92,7 @@ def component_history():
     tracker_count = 0
     chart_json = None
     status_chart_json = None
+    resolution_chart_json = None
     jira_url = None
     cve_ids = []
 
@@ -132,6 +133,30 @@ def component_history():
                     },
                     title="Status Breakdown",
                 )
+
+                # Build resolution breakdown pie chart for closed trackers
+                resolution_counts: dict[str, int] = {}
+                for t in trackers:
+                    if not t.is_open:
+                        resolution = t.resolution or "Unknown"
+                        resolution_counts[resolution] = resolution_counts.get(resolution, 0) + 1
+                if resolution_counts:
+                    resolution_colors = {
+                        "Not a Bug": "#EF553B",
+                        "Won't Do": "#FFA15A",
+                        "Done": "#00CC96",
+                        "Done-Errata": "#636EFA",
+                    }
+                    sorted_resolutions = sorted(resolution_counts.items(), key=lambda x: x[1], reverse=True)
+                    labels = [r for r, _ in sorted_resolutions]
+                    resolution_chart_json = pie.render_json(
+                        {
+                            "labels": labels,
+                            "values": [c for _, c in sorted_resolutions],
+                            "colors": [resolution_colors.get(r, "gray") for r in labels],
+                        },
+                        title="Resolution Breakdown",
+                    )
 
             # Build Jira search URL
             jira_server = current_app.config.get("JIRA_SERVER", "")
@@ -178,5 +203,6 @@ def component_history():
         jira_url=jira_url,
         chart_json=chart_json,
         status_chart_json=status_chart_json,
+        resolution_chart_json=resolution_chart_json,
         cve_ids=cve_ids,
     )

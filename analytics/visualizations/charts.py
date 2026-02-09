@@ -304,14 +304,13 @@ class PieChart(Visualization):
             data: Dict with 'labels' and 'values' keys.
             **options: title.
         """
-        fig = go.Figure(
-            data=[
-                go.Pie(
-                    labels=data.get("labels", []),
-                    values=data.get("values", []),
-                )
-            ]
+        pie_kwargs = dict(
+            labels=data.get("labels", []),
+            values=data.get("values", []),
         )
+        if data.get("colors"):
+            pie_kwargs["marker"] = dict(colors=data["colors"])
+        fig = go.Figure(data=[go.Pie(**pie_kwargs)])
         fig.update_layout(title=options.get("title", ""))
         return json.dumps(fig, cls=PlotlyJSONEncoder)
 
